@@ -35,7 +35,7 @@ func NewPeopleRepository() *PeopleRepository {
 		return nil
 	}
 
-	connectionURL := fmt.Sprintf("postgres://%v:%v@%v:%v/%v",
+	connectionURL := fmt.Sprintf("postgres://%v:%v@%v:%v/%v?sslmode=disable",
 		vars[dbUsername],
 		vars[dbPassword],
 		vars[dbURL],
@@ -64,17 +64,19 @@ func (pr *PeopleRepository) Save(ctx context.Context, person users.ExtendedUser)
 
 	id, err := pr.savePerson(ctx, tx, person)
 	if err != nil {
+		log.Println(err.Error())
 		return uuid.UUID{}, err
 	}
 	err = pr.saveNationality(context.WithValue(ctx, "id", id), tx, person)
 	if err != nil {
+		log.Println(err.Error())
 		return uuid.UUID{}, err
 	}
 	if err := tx.Commit(ctx); err != nil {
 		return uuid.UUID{}, err
 	}
 
-	return uuid.UUID{}, nil
+	return id, nil
 }
 
 func (pr *PeopleRepository) savePerson(ctx context.Context, tx pgx.Tx, person users.ExtendedUser) (uuid.UUID, error) {
@@ -93,15 +95,13 @@ func (pr *PeopleRepository) savePerson(ctx context.Context, tx pgx.Tx, person us
 }
 
 func (pr *PeopleRepository) saveNationality(ctx context.Context, tx pgx.Tx, person users.ExtendedUser) error {
-	if userID, ok := ctx.Value("id").(uuid.UUID); ok {
-		for i := 0; i < len(person.Nationality); i++ {
-			if _, err := tx.Exec(ctx, "INSERT INTO person_nationality VALUES ($1, $2, $3, $4)",
-				uuid.New(), person.Nationality[i].ID, person.Nationality[i].Probability, userID); err != nil {
-				return err
-			}
+	userID := ctx.Value("id").(uuid.UUID)
+	for i := 0; i < len(person.Nationality); i++ {
+		if _, err := tx.Exec(ctx, "INSERT INTO person_nationality VALUES ($1, $2, $3, $4)",
+			uuid.New(), person.Nationality[i].ID, person.Nationality[i].Probability, userID); err != nil {
+			return err
 		}
 	}
-
-	return fmt.Errorf("couldn't have casted value to uuid")
+	return nil
 
 }

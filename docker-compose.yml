@@ -3,23 +3,23 @@ services:
   identifier:
     container_name: identifier_service
     build:
-      dockerfile: /Deployment/app/app.Dockerfile
+      dockerfile: ./Deployment/app/app.Dockerfile
       context: .
     ports:
       - "8080:8080"
     env_file:
-      - Deployment/app/app.env
+      - ./Deployment/app/app.env
     depends_on:
     - postgres_people
   postgres_people:
     container_name: postgres_people
     build:
-      dockerfile: /Deployment/db/db.Dockerfile
+      dockerfile: ./Deployment/db/db.Dockerfile
       context: .
     ports:
       - "5432:5432"
     env_file:
-      - Deployment/db/db.env
+      - ./Deployment/db/db.env
     volumes:
       - postgres_users:/var/lib/postgresql/data
     healthcheck:

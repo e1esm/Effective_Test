@@ -8,6 +8,7 @@ import (
 	_ "github.com/golang-migrate/migrate/v4/database/postgres"
 	_ "github.com/golang-migrate/migrate/v4/source/file"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"log"
 	"time"
 )
 
@@ -23,6 +24,7 @@ const (
 func ConnectAndRunMigrations(ctx context.Context, dbURL string, migrationType MigrationType) (*pgxpool.Pool, error) {
 	pool, err := connect(ctx, dbURL)
 	if err != nil {
+		log.Println(err.Error())
 		return nil, err
 	}
 
@@ -62,12 +64,15 @@ func runMigrations(dbURL, fileDir string, migrationType MigrationType) error {
 			if errors.Is(err, migrate.ErrNoChange) {
 				return nil
 			}
+			log.Println(err.Error())
+			return err
 		}
 	case DOWN:
 		if err = m.Down(); err != nil {
 			if errors.Is(err, migrate.ErrNoChange) {
 				return nil
 			}
+			log.Println(err.Error())
 			return err
 		}
 	}

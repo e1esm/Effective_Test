@@ -16,6 +16,6 @@ WORKDIR /
 
 COPY --from=builder /identifier_service/app /app
 COPY --from=builder /identifier_service/Deployment/app/app.env /app.env
-COPY --from=builder /identifier_service/internal/repository/postgres/migrations/*sql /migrations/up.sql
+COPY --from=builder /identifier_service/internal/repository/postgres/migrations/ /migrations
 
 CMD ["/app"]
