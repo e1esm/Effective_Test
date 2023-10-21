@@ -9,6 +9,7 @@ import (
 
 type Aggregator interface {
 	Save(context.Context, *users.ExtendedUser) (uuid.UUID, error)
+	Delete(ctx context.Context, id uuid.UUID) (uuid.UUID, error)
 }
 
 type UserService struct {
@@ -23,4 +24,8 @@ func NewUserService(repository postgres.Repository) *UserService {
 
 func (us *UserService) Save(ctx context.Context, user *users.ExtendedUser) (uuid.UUID, error) {
 	return us.repo.Save(ctx, *user)
+}
+
+func (us *UserService) Delete(ctx context.Context, id uuid.UUID) (uuid.UUID, error) {
+	return us.repo.Delete(ctx, id)
 }

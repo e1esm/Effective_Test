@@ -11,5 +11,5 @@ CREATE TABLE person_nationality(
     id uuid primary key,
     nationality varchar(5),
     probability float4,
-    person_id uuid references people_info(id)
+    person_id uuid references people_info(id) ON DELETE CASCADE
 );

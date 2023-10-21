@@ -2,6 +2,7 @@ package postgres
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"github.com/e1esm/Effective_Test/internal/models/users"
 	"github.com/e1esm/Effective_Test/internal/repository/postgres/migrations"
@@ -20,8 +21,13 @@ const (
 	db         = "db"
 )
 
+var (
+	NoRecordsFound = errors.New("no records were found")
+)
+
 type Repository interface {
 	Save(context.Context, users.ExtendedUser) (uuid.UUID, error)
+	Delete(context.Context, uuid.UUID) (uuid.UUID, error)
 }
 
 type PeopleRepository struct {
@@ -104,4 +110,17 @@ func (pr *PeopleRepository) saveNationality(ctx context.Context, tx pgx.Tx, pers
 	}
 	return nil
 
+}
+
+func (pr *PeopleRepository) Delete(ctx context.Context, id uuid.UUID) (uuid.UUID, error) {
+
+	tag, err := pr.db.Exec(ctx, "DELETE FROM people_info WHERE id = $1", id)
+	if err != nil {
+		return uuid.UUID{}, err
+	}
+	if tag.RowsAffected() == 0 {
+		return uuid.UUID{}, NoRecordsFound
+	}
+
+	return id, nil
 }
