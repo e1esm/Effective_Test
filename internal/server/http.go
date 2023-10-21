@@ -20,6 +20,7 @@ var (
 	marshallingErr = errors.New("error while operating over the request input data")
 	identityErr    = errors.New("error occurred while identifying the user: %v")
 	saveErr        = errors.New("error while inserting user: %v")
+	updateErr      = errors.New("error while updating user: %v")
 )
 
 type HttpServer struct {

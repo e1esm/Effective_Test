@@ -30,6 +30,7 @@ var (
 type Repository interface {
 	Save(context.Context, users.ExtendedUser) (uuid.UUID, error)
 	Delete(context.Context, uuid.UUID) (uuid.UUID, error)
+	Update(context.Context, users.ExtendedUser) (uuid.UUID, error)
 }
 
 type PeopleRepository struct {
@@ -93,7 +94,11 @@ func (pr *PeopleRepository) Save(ctx context.Context, person users.ExtendedUser)
 }
 
 func (pr *PeopleRepository) savePerson(ctx context.Context, tx pgx.Tx, person users.ExtendedUser) (uuid.UUID, error) {
-	id := uuid.New()
+	var id uuid.UUID
+	id = uuid.New()
+	if retrievedID := ctx.Value("id"); retrievedID != nil {
+		id = retrievedID.(uuid.UUID)
+	}
 	_, err := tx.Exec(ctx, "INSERT INTO people_info VALUES($1, $2, $3, $4, $5, $6)",
 		id,
 		person.Name,
@@ -131,5 +136,24 @@ func (pr *PeopleRepository) Delete(ctx context.Context, id uuid.UUID) (uuid.UUID
 		return uuid.UUID{}, NoRecordsFound
 	}
 	logger.GetLogger().Info("Successfully deleted user", zap.String("ID", id.String()))
+	return id, nil
+}
+
+func (pr *PeopleRepository) Update(ctx context.Context, user users.ExtendedUser) (uuid.UUID, error) {
+	if _, err := pr.Delete(ctx, ctx.Value("id").(uuid.UUID)); err != nil {
+		switch err {
+		case NoRecordsFound:
+			break
+		default:
+			logger.GetLogger().Error("Error", zap.String("err", err.Error()))
+			return uuid.UUID{}, fmt.Errorf("update error: %v", err)
+		}
+	}
+	id, err := pr.Save(ctx, user)
+	if err != nil {
+		logger.GetLogger().Error("Updating error", zap.String("err", err.Error()))
+		return uuid.UUID{}, fmt.Errorf("update error: %v", err)
+	}
+	logger.GetLogger().Info("Successfully updated user", zap.String("ID", id.String()))
 	return id, nil
 }

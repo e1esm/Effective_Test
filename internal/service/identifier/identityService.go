@@ -50,11 +50,12 @@ func (is *IdentityService) Identify(user users.User) *users.ExtendedUser {
 	wg.Wait()
 
 	if isOk := protectedUser.Validate(); isOk {
+		logger.GetLogger().Info("Successfully identified user",
+			zap.String("user", user.Name))
 		builtUser := protectedUser.GetUser()
 		return &builtUser
 	}
-
-	logger.GetLogger().Info("Successfully identified user",
+	logger.GetLogger().Error("Failed to identify user",
 		zap.String("user", user.Name))
 	return nil
 }

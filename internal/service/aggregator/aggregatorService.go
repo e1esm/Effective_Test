@@ -9,7 +9,8 @@ import (
 
 type Aggregator interface {
 	Save(context.Context, *users.ExtendedUser) (uuid.UUID, error)
-	Delete(ctx context.Context, id uuid.UUID) (uuid.UUID, error)
+	Delete(context.Context, uuid.UUID) (uuid.UUID, error)
+	Update(context.Context, *users.ExtendedUser) (uuid.UUID, error)
 }
 
 type UserService struct {
@@ -28,4 +29,8 @@ func (us *UserService) Save(ctx context.Context, user *users.ExtendedUser) (uuid
 
 func (us *UserService) Delete(ctx context.Context, id uuid.UUID) (uuid.UUID, error) {
 	return us.repo.Delete(ctx, id)
+}
+
+func (us *UserService) Update(ctx context.Context, user *users.ExtendedUser) (uuid.UUID, error) {
+	return us.repo.Update(ctx, *user)
 }
