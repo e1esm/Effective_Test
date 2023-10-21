@@ -3,6 +3,8 @@ package identifier
 import (
 	"context"
 	"github.com/e1esm/Effective_Test/internal/models/users"
+	"github.com/e1esm/Effective_Test/pkg/utils/logger"
+	"go.uber.org/zap"
 	"sync"
 	"time"
 )
@@ -51,5 +53,8 @@ func (is *IdentityService) Identify(user users.User) *users.ExtendedUser {
 		builtUser := protectedUser.GetUser()
 		return &builtUser
 	}
+
+	logger.GetLogger().Info("Successfully identified user",
+		zap.String("user", user.Name))
 	return nil
 }

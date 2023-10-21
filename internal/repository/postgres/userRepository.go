@@ -7,9 +7,11 @@ import (
 	"github.com/e1esm/Effective_Test/internal/models/users"
 	"github.com/e1esm/Effective_Test/internal/repository/postgres/migrations"
 	"github.com/e1esm/Effective_Test/pkg/utils/envParser"
+	"github.com/e1esm/Effective_Test/pkg/utils/logger"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"go.uber.org/zap"
 	"log"
 )
 
@@ -37,7 +39,8 @@ type PeopleRepository struct {
 func NewPeopleRepository() *PeopleRepository {
 	vars, err := envParser.ParseEnvVariable(dbURL, dbUsername, dbPassword, dbPort, db)
 	if err != nil {
-		log.Println(err.Error())
+		logger.GetLogger().Error("Something's missing",
+			zap.String("error", err.Error()))
 		return nil
 	}
 
@@ -51,7 +54,8 @@ func NewPeopleRepository() *PeopleRepository {
 	pool, err := migrations.ConnectAndRunMigrations(context.Background(), connectionURL, migrations.UP)
 	log.Println(pool)
 	if err != nil {
-		log.Println(err.Error())
+		logger.GetLogger().Error("Couldn't have either connected to the DB or run migrations",
+			zap.String("err", err.Error()))
 		return nil
 	}
 
@@ -82,6 +86,9 @@ func (pr *PeopleRepository) Save(ctx context.Context, person users.ExtendedUser)
 		return uuid.UUID{}, err
 	}
 
+	logger.GetLogger().Info("Successfully committed transaction for user",
+		zap.String("id", id.String()))
+
 	return id, nil
 }
 
@@ -108,6 +115,8 @@ func (pr *PeopleRepository) saveNationality(ctx context.Context, tx pgx.Tx, pers
 			return err
 		}
 	}
+	logger.GetLogger().Info("Successfully inserted nationalities",
+		zap.String("user", person.Name))
 	return nil
 
 }
@@ -121,6 +130,6 @@ func (pr *PeopleRepository) Delete(ctx context.Context, id uuid.UUID) (uuid.UUID
 	if tag.RowsAffected() == 0 {
 		return uuid.UUID{}, NoRecordsFound
 	}
-
+	logger.GetLogger().Info("Successfully deleted user", zap.String("ID", id.String()))
 	return id, nil
 }

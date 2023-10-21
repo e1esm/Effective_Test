@@ -7,7 +7,9 @@ import (
 	"fmt"
 	"github.com/e1esm/Effective_Test/internal/models/users"
 	"github.com/e1esm/Effective_Test/internal/repository/postgres"
+	"github.com/e1esm/Effective_Test/pkg/utils/logger"
 	"github.com/google/uuid"
+	"go.uber.org/zap"
 	"io"
 	"log"
 	"net/http"
@@ -22,57 +24,63 @@ var (
 	deleteErr      = errors.New("error while deleting user with this ID: %v")
 )
 
-func (hs *HttpServer) New(r http.ResponseWriter, h *http.Request) {
-	if h.Method != http.MethodPost {
-		r.WriteHeader(http.StatusMethodNotAllowed)
-		if _, err := r.Write([]byte(fmt.Sprintf(methodErr.Error(), h.RequestURI))); err != nil {
-			log.Println(err.Error())
+func (hs *HttpServer) New(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		if _, err := w.Write([]byte(fmt.Sprintf(methodErr.Error(), r.RequestURI))); err != nil {
+			logger.GetLogger().Error(err.Error(), zap.String("URL", r.RequestURI))
 		}
 		return
 	}
-	content, err := io.ReadAll(h.Body)
+	content, err := io.ReadAll(r.Body)
 	if err != nil {
-		r.WriteHeader(http.StatusBadRequest)
-		if _, err := r.Write([]byte(fmt.Sprintf(invalidReq.Error(), h.RequestURI))); err != nil {
-			log.Println(err.Error())
+		w.WriteHeader(http.StatusBadRequest)
+		if _, err := w.Write([]byte(fmt.Sprintf(invalidReq.Error(), r.RequestURI))); err != nil {
+			logger.GetLogger().Error(err.Error(), zap.String("URL", r.RequestURI))
 		}
 		return
 	}
 
 	request := &users.User{}
 	if err := json.Unmarshal(content, request); err != nil {
-		r.WriteHeader(http.StatusBadRequest)
-		if _, err := r.Write([]byte(fmt.Sprintf(marshallingErr.Error()))); err != nil {
-			log.Println(err.Error())
+		w.WriteHeader(http.StatusBadRequest)
+		if _, err := w.Write([]byte(fmt.Sprintf(marshallingErr.Error()))); err != nil {
+			logger.GetLogger().Error(err.Error(), zap.String("URL", r.RequestURI))
 		}
 		return
 	}
 	user := hs.identityService.Identify(*request)
 	if user == nil {
-		r.WriteHeader(http.StatusInternalServerError)
-		if _, err := r.Write([]byte(fmt.Sprintf(identityErr.Error(), request.Name))); err != nil {
-			log.Println(err.Error())
+		w.WriteHeader(http.StatusInternalServerError)
+		if _, err := w.Write([]byte(fmt.Sprintf(identityErr.Error(), request.Name))); err != nil {
+			logger.GetLogger().Error(err.Error(), zap.String("URL", r.RequestURI))
 		}
 		return
 	}
 
 	id, err := hs.userService.Save(context.Background(), user)
 	if err != nil {
-		r.WriteHeader(http.StatusInternalServerError)
-		if _, err := r.Write([]byte(fmt.Sprintf(saveErr.Error(), user.User))); err != nil {
-			log.Println(err.Error())
+		w.WriteHeader(http.StatusInternalServerError)
+		if _, err := w.Write([]byte(fmt.Sprintf(saveErr.Error(), user.User))); err != nil {
+			logger.GetLogger().Error(err.Error(), zap.String("URL", r.RequestURI))
 		}
 		return
 	}
 
-	r.WriteHeader(http.StatusOK)
-	r.Write([]byte(id.String()))
+	w.WriteHeader(http.StatusOK)
+	if _, err := w.Write([]byte(id.String())); err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		logger.GetLogger().Error(err.Error(), zap.String("URL", r.RequestURI))
+	}
 }
 
 func (hs *HttpServer) Delete(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodDelete {
 		w.WriteHeader(http.StatusMethodNotAllowed)
-		w.Write([]byte(fmt.Sprintf(methodErr.Error(), r.RequestURI)))
+		if _, err := w.Write([]byte(fmt.Sprintf(methodErr.Error(), r.RequestURI))); err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			logger.GetLogger().Error(err.Error(), zap.String("URL", r.RequestURI))
+		}
 		return
 	}
 
@@ -84,13 +92,19 @@ func (hs *HttpServer) Delete(w http.ResponseWriter, r *http.Request) {
 	content, err := io.ReadAll(r.Body)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte(fmt.Sprintf(invalidReq.Error(), r.RequestURI)))
+		if _, err := w.Write([]byte(fmt.Sprintf(invalidReq.Error(), r.RequestURI))); err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			logger.GetLogger().Error(err.Error(), zap.String("URL", r.RequestURI))
+		}
 		return
 	}
 	if err := json.Unmarshal(content, &toBeDeleted); err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		log.Println(err)
-		w.Write([]byte(marshallingErr.Error()))
+		if _, err := w.Write([]byte(marshallingErr.Error())); err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			logger.GetLogger().Error(err.Error(), zap.String("URL", r.RequestURI))
+		}
 		return
 	}
 
@@ -98,14 +112,23 @@ func (hs *HttpServer) Delete(w http.ResponseWriter, r *http.Request) {
 		switch err {
 		case postgres.NoRecordsFound:
 			w.WriteHeader(http.StatusNotFound)
-			w.Write([]byte(err.Error()))
+			if _, err := w.Write([]byte(err.Error())); err != nil {
+				w.WriteHeader(http.StatusInternalServerError)
+				logger.GetLogger().Error(err.Error(), zap.String("URL", r.RequestURI))
+			}
 		default:
 			w.WriteHeader(http.StatusInternalServerError)
-			w.Write([]byte(fmt.Sprintf(deleteErr.Error(), toBeDeleted)))
+			if _, err := w.Write([]byte(err.Error())); err != nil {
+				w.WriteHeader(http.StatusInternalServerError)
+				logger.GetLogger().Error(err.Error(), zap.String("URL", r.RequestURI))
+			}
 		}
 		return
 	}
 
 	w.WriteHeader(http.StatusOK)
-	w.Write([]byte(toBeDeleted.ID))
+	if _, err = w.Write([]byte(toBeDeleted.ID)); err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		logger.GetLogger().Error(err.Error(), zap.String("URL", r.RequestURI))
+	}
 }
