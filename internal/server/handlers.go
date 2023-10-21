@@ -1,6 +1,7 @@
 package server
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -15,6 +16,7 @@ var (
 	invalidReq     = errors.New("invalid request was sent to the URL: %v")
 	marshallingErr = errors.New("error while operating over the request input data")
 	identityErr    = errors.New("error occurred while identifying the user: %v")
+	saveErr        = errors.New("error while inserting user: %v")
 )
 
 func (hs *HttpServer) New(r http.ResponseWriter, h *http.Request) {
@@ -51,5 +53,15 @@ func (hs *HttpServer) New(r http.ResponseWriter, h *http.Request) {
 		return
 	}
 
+	id, err := hs.userService.Save(context.Background(), user)
+	if err != nil {
+		r.WriteHeader(http.StatusInternalServerError)
+		if _, err := r.Write([]byte(fmt.Sprintf(saveErr.Error(), user.User))); err != nil {
+			log.Println(err.Error())
+		}
+		return
+	}
+
 	r.WriteHeader(http.StatusOK)
+	r.Write([]byte(id.String()))
 }

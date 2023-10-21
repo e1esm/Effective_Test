@@ -9,6 +9,8 @@ services:
       - "8080:8080"
     env_file:
       - Deployment/app/app.env
+    depends_on:
+    - postgres_people
   postgres_people:
     container_name: postgres_people
     build:
@@ -18,4 +20,13 @@ services:
       - "5432:5432"
     env_file:
       - Deployment/db/db.env
+    volumes:
+      - postgres_users:/var/lib/postgresql/data
+    healthcheck:
+      test: [ "CMD", "pg_isready" ]
+      interval: 10s
+      timeout: 5s
+      retries: 3
 
+volumes:
+  postgres_users:
