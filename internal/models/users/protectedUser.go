@@ -1,6 +1,7 @@
 package users
 
 import (
+	"github.com/e1esm/Effective_Test/internal/models/nationalities"
 	"sync"
 )
 
@@ -22,7 +23,7 @@ func (pu *ProtectedUser) SetSex(sex string) {
 	pu.mu.Unlock()
 }
 
-func (pu *ProtectedUser) SetNationality(nationality []string) {
+func (pu *ProtectedUser) SetNationality(nationality []nationalities.Nationality) {
 	pu.mu.Lock()
 	pu.user.Nationality = nationality
 	pu.mu.Unlock()

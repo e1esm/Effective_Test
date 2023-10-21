@@ -1,0 +1,21 @@
+version: '3'
+services:
+  identifier:
+    container_name: identifier_service
+    build:
+      dockerfile: /Deployment/app/app.Dockerfile
+      context: .
+    ports:
+      - "8080:8080"
+    env_file:
+      - Deployment/app/app.env
+  postgres_people:
+    container_name: postgres_people
+    build:
+      dockerfile: /Deployment/db/db.Dockerfile
+      context: .
+    ports:
+      - "5432:5432"
+    env_file:
+      - Deployment/db/db.env
+
