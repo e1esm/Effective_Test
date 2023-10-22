@@ -2,6 +2,7 @@ package options
 
 import (
 	"fmt"
+	"github.com/e1esm/Effective_Test/internal/models/nationalities"
 	"github.com/e1esm/Effective_Test/internal/models/users"
 	"reflect"
 	"strings"
@@ -29,8 +30,27 @@ func NewNationalityOptions(nations []string) NationalityOptions {
 	return NationalityOptions{Nationalities: nations}
 }
 
-func (no *NationalityOptions) FilterByNationality(users []users.ExtendedUser) []users.ExtendedUser {
-	return nil
+func (no *NationalityOptions) FilterByNationality(toBeFiltered []users.EntityUser) []users.EntityUser {
+	filtered := make([]users.EntityUser, 0)
+	for i := 0; i < len(toBeFiltered); i++ {
+		if no.contains(toBeFiltered[i].Nationality) {
+			filtered = append(filtered, toBeFiltered[i])
+		}
+	}
+
+	return filtered
+}
+
+func (no *NationalityOptions) contains(nats []nationalities.Nationality) bool {
+	for i := 0; i < len(nats); i++ {
+		for j := 0; j < len(no.Nationalities); j++ {
+			if nats[i].ID == no.Nationalities[j] {
+				return true
+			}
+		}
+	}
+
+	return false
 }
 
 type UserOptions struct {
@@ -85,11 +105,11 @@ func (uo *UserOptions) configureQueryString() string {
 
 	switch len(pairs) {
 	case 0:
-		return fmt.Sprintf("SELECT * FROM people_info LIMIT %d OFFSET %d", uo.Limit, uo.Offset)
+		return fmt.Sprintf("SELECT uuid(id), name, surname, patronymic, age, sex FROM people_info LIMIT %d OFFSET %d", uo.Limit, uo.Offset)
 	case 1:
-		return fmt.Sprintf("SELECT * FROM people_info WHERE %s = '%v' LIMIT %d OFFSET %d", pairs[0].key, pairs[0].value, uo.Limit, uo.Offset)
+		return fmt.Sprintf("SELECT uuid(id), name, surname, patronymic, age, sex FROM people_info WHERE %s = '%v' LIMIT %d OFFSET %d", pairs[0].key, pairs[0].value, uo.Limit, uo.Offset)
 	case 2:
-		return fmt.Sprintf("SELECT * FROM people_info WHERE %s = '%v' AND %s = '%v' LIMIT %d OFFSET %d",
+		return fmt.Sprintf("SELECT uuid(id), name, surname, patronymic, age, sex FROM people_info WHERE %s = '%v' AND %s = '%v' LIMIT %d OFFSET %d",
 			pairs[0].key,
 			pairs[0].value,
 			pairs[1].key,
@@ -97,7 +117,7 @@ func (uo *UserOptions) configureQueryString() string {
 			uo.Limit,
 			uo.Offset)
 	case 3:
-		return fmt.Sprintf("SELECT * FROM people_info WHERE %s = '%v' AND %s = %v AND %s = '%s' LIMIT %d OFFSET %d",
+		return fmt.Sprintf("SELECT uuid(id), name, surname, patronymic, age, sex FROM people_info WHERE %s = '%v' AND %s = %v AND %s = '%s' LIMIT %d OFFSET %d",
 			pairs[0].key,
 			pairs[0].value,
 			pairs[1].key,
