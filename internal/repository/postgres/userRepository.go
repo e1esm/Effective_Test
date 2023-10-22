@@ -4,6 +4,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/e1esm/Effective_Test/internal/models/nationalities"
+	"github.com/e1esm/Effective_Test/internal/models/options"
 	"github.com/e1esm/Effective_Test/internal/models/users"
 	"github.com/e1esm/Effective_Test/internal/repository/postgres/migrations"
 	"github.com/e1esm/Effective_Test/pkg/utils/envParser"
@@ -13,6 +15,7 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 	"go.uber.org/zap"
 	"log"
+	"time"
 )
 
 const (
@@ -31,6 +34,7 @@ type Repository interface {
 	Save(context.Context, users.ExtendedUser) (uuid.UUID, error)
 	Delete(context.Context, uuid.UUID) (uuid.UUID, error)
 	Update(context.Context, users.ExtendedUser) (uuid.UUID, error)
+	Get(context.Context, options.UserFilter) ([]users.EntityUser, error)
 }
 
 type PeopleRepository struct {
@@ -159,4 +163,57 @@ func (pr *PeopleRepository) Update(ctx context.Context, user users.ExtendedUser)
 	}
 	logger.GetLogger().Info("Successfully updated user", zap.String("ID", id.String()))
 	return id, nil
+}
+
+func (pr *PeopleRepository) Get(ctx context.Context, filter options.UserFilter) ([]users.EntityUser, error) {
+
+	queryString := filter.Build()
+
+	ctx, cancel := context.WithTimeout(ctx, 2*time.Second)
+	defer cancel()
+	rows, err := pr.db.Query(ctx, queryString)
+
+	if err != nil {
+		logger.GetLogger().Error("User fetching error", zap.String("err", err.Error()))
+		return nil, fmt.Errorf("error while fetching users from the database")
+	}
+
+	fetchedUsers := make([]users.EntityUser, rows.CommandTag().RowsAffected())
+	var i int
+	for rows.Next() {
+		user := &users.EntityUser{}
+		if err := rows.Scan(user.ID, user.Name, user.Surname, user.Patronymic, user.Age, user.Sex); err != nil {
+			logger.GetLogger().Error("Error while scanning row", zap.String("err", err.Error()))
+			return nil, fmt.Errorf("error while scanning user: %v", err.Error())
+		}
+		fetchedUsers[i] = *user
+		i++
+	}
+
+	fetchedUsers, err = pr.getFilteredByNationalities(ctx, fetchedUsers, filter.GetNationalityOptions())
+	if err != nil {
+		logger.GetLogger().Error("Error while operating over nationalities of users", zap.String("err", err.Error()))
+		return nil, fmt.Errorf("nationality operating error: %v", err.Error())
+	}
+
+	return fetchedUsers, nil
+}
+
+func (pr *PeopleRepository) getFilteredByNationalities(ctx context.Context, users []users.EntityUser, nationalityOptions options.NationalityOptions) ([]users.EntityUser, error) {
+	for i := 0; i < len(users); i++ {
+		var nations []nationalities.Nationality
+		rows, err := pr.db.Query(ctx, "SELECT nationality, probability from person_nationality where person_id = $1", users[i].ID)
+		if err != nil {
+			return nil, fmt.Errorf("error while fetching users's nationalities: %v", err.Error())
+		}
+		for rows.Next() {
+			nationality := &nationalities.Nationality{}
+			if err := rows.Scan(nationality.ID, nationality.Probability); err != nil {
+				return nil, fmt.Errorf("error while scanning nationality row: %v", err.Error())
+			}
+			nations = append(nations, *nationality)
+		}
+		users[i].Nationality = nations
+	}
+	return users, nil
 }

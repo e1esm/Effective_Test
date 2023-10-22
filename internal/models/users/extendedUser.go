@@ -9,8 +9,21 @@ type ExtendedUser struct {
 	Nationality []nationalities.Nationality `json:"nationality"`
 }
 
-func NewExtendedUser(user User) *ExtendedUser {
+func ExtendedFromRequest(user User) *ExtendedUser {
 	return &ExtendedUser{
 		User: user,
+	}
+}
+
+func ExtendedFromEntity(user EntityUser) *ExtendedUser {
+	return &ExtendedUser{
+		Age:         user.Age,
+		Sex:         user.Sex,
+		Nationality: user.Nationality,
+		User: User{
+			user.Name,
+			user.Surname,
+			user.Patronymic,
+		},
 	}
 }

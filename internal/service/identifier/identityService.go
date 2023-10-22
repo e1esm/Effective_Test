@@ -25,7 +25,7 @@ func NewIdentifyService(timeout time.Duration) *IdentityService {
 
 func (is *IdentityService) Identify(user users.User) *users.ExtendedUser {
 	wg := sync.WaitGroup{}
-	protectedUser := users.NewProtectedUser(*users.NewExtendedUser(user))
+	protectedUser := users.NewProtectedUser(*users.ExtendedFromRequest(user))
 
 	ctx, cancel := context.WithTimeout(context.Background(), is.timeout)
 	defer cancel()
