@@ -41,6 +41,7 @@ func (is *IdentityService) requestSex(ctx context.Context, user *users.Protected
 			zap.String("err", err.Error()))
 		return
 	}
-
-	user.SetSex(data["gender"].(string))
+	if data["gender"] != nil {
+		user.SetSex(data["gender"].(string))
+	}
 }

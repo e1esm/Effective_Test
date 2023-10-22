@@ -42,6 +42,7 @@ func (is *IdentityService) requestAge(ctx context.Context, user *users.Protected
 			zap.String("err", err.Error()))
 		return
 	}
-
-	user.SetAge(int(data["age"].(float64)))
+	if data["age"] != nil {
+		user.SetAge(int(data["age"].(float64)))
+	}
 }
