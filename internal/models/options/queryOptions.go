@@ -27,6 +27,13 @@ type NationalityOptions struct {
 }
 
 func NewNationalityOptions(nations []string) NationalityOptions {
+	if nations != nil && (len(nations) > 0 && nations[0] == "") {
+		nations = nil
+	} else {
+		for i := 0; i < len(nations); i++ {
+			nations[i] = strings.ToUpper(nations[i])
+		}
+	}
 	return NationalityOptions{Nationalities: nations}
 }
 

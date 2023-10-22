@@ -26,6 +26,7 @@ func (hs *HttpServer) Change(w http.ResponseWriter, r *http.Request) {
 	}
 
 	content, err := io.ReadAll(r.Body)
+	defer r.Body.Close()
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		if _, err := w.Write([]byte(fmt.Sprintf(invalidReq.Error(), r.RequestURI))); err != nil {

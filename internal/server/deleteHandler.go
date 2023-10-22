@@ -29,6 +29,7 @@ func (hs *HttpServer) Delete(w http.ResponseWriter, r *http.Request) {
 
 	var toBeDeleted DeleteRequest
 	content, err := io.ReadAll(r.Body)
+	defer r.Body.Close()
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		if _, err := w.Write([]byte(fmt.Sprintf(invalidReq.Error(), r.RequestURI))); err != nil {

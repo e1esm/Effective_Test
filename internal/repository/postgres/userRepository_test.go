@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/e1esm/Effective_Test/internal/models/nationalities"
+	"github.com/e1esm/Effective_Test/internal/models/options"
 	"github.com/e1esm/Effective_Test/internal/models/users"
 	"github.com/e1esm/Effective_Test/internal/repository/postgres/migrations"
 	"github.com/e1esm/Effective_Test/pkg/utils/logger"
@@ -215,5 +216,96 @@ func TestPeopleRepository_Delete(t *testing.T) {
 			t.Errorf("Invalid result. Got: %v", err)
 		}
 
+	}
+}
+
+func TestPeopleRepository_Get(t *testing.T) {
+	input := []struct {
+		ID        uuid.UUID
+		inputUser users.ExtendedUser
+	}{
+		{
+			ID: uuid.New(),
+			inputUser: users.ExtendedUser{
+				User: users.User{
+					Name:       "Egor",
+					Surname:    "Ivanov",
+					Patronymic: "Ivanovich",
+				},
+				Age: 20,
+				Sex: "male",
+				Nationality: []nationalities.Nationality{
+					{ID: "RU", Probability: 100},
+				},
+			},
+		},
+		{
+			ID: uuid.New(),
+			inputUser: users.ExtendedUser{
+				User: users.User{
+					Name:       "Nikita",
+					Surname:    "Ivanov",
+					Patronymic: "Ivanovich",
+				},
+				Age: 25,
+				Sex: "male",
+				Nationality: []nationalities.Nationality{
+					{ID: "ES", Probability: 100},
+				},
+			},
+		},
+		{
+			ID: uuid.New(),
+			inputUser: users.ExtendedUser{
+				User: users.User{
+					Name:       "Albert",
+					Surname:    "Ivanov",
+					Patronymic: "Ivanovich",
+				},
+				Age: 30,
+				Sex: "male",
+				Nationality: []nationalities.Nationality{
+					{ID: "BR", Probability: 100},
+				},
+			},
+		},
+	}
+	for _, test := range input {
+		_, err := testRepo.Save(context.Background(), test.inputUser)
+		if err != nil {
+			t.Errorf("invalid result. Got: %v", err)
+		}
+	}
+
+	search := []struct {
+		name           string
+		opts           options.QueryOptions
+		expectedLength int
+	}{
+		{
+			name: "SUCCESS",
+			opts: options.QueryOptions{
+				options.NewUserOptions("female", "", 0, 2, 0),
+				options.NewNationalityOptions([]string{}),
+			},
+			expectedLength: 0,
+		},
+		{
+			name: "SUCCESS",
+			opts: options.QueryOptions{
+				options.NewUserOptions("male", "", 0, 1, 0),
+				options.NewNationalityOptions([]string{"RU"}),
+			},
+			expectedLength: 1,
+		},
+	}
+	for _, test := range search {
+		res, err := testRepo.Get(context.Background(), &test.opts)
+		if err != nil && test.name == "SUCCESS" {
+			t.Errorf("Invalid result. Got: %v", err)
+		}
+		if len(res) != test.expectedLength {
+			t.Errorf("Invalid length. Got: %v, want: %v", len(res), test.expectedLength)
+		}
 	}
 }

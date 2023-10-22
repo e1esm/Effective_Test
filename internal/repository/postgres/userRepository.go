@@ -189,7 +189,7 @@ func (pr *PeopleRepository) Get(ctx context.Context, filter options.UserFilter) 
 		fetchedUsers = append(fetchedUsers, *user)
 	}
 
-	if filter.GetNationalityOptions().Nationalities[0] != "" {
+	if filter.GetNationalityOptions().Nationalities != nil {
 		logger.GetLogger().Info("Nation options're received", zap.String("opts", fmt.Sprintf("%v", filter.GetNationalityOptions().Nationalities)), zap.String("len", fmt.Sprintf("%v", len(
 			filter.GetNationalityOptions().Nationalities))))
 		fetchedUsers, err = pr.getFilteredByNationalities(ctx, fetchedUsers, filter.GetNationalityOptions())
