@@ -182,12 +182,16 @@ func (pr *PeopleRepository) Get(ctx context.Context, filter options.UserFilter) 
 	var i int
 	for rows.Next() {
 		user := &users.EntityUser{}
-		if err := rows.Scan(user.ID, user.Name, user.Surname, user.Patronymic, user.Age, user.Sex); err != nil {
+		var id string
+		if err := rows.Scan(id, user.Name, user.Surname, user.Patronymic, user.Age, user.Sex); err != nil {
 			logger.GetLogger().Error("Error while scanning row", zap.String("err", err.Error()))
 			return nil, fmt.Errorf("error while scanning user: %v", err.Error())
 		}
-		fetchedUsers[i] = *user
-		i++
+		if id != "" {
+			user.ID = uuid.MustParse(id)
+			fetchedUsers[i] = *user
+			i++
+		}
 	}
 
 	fetchedUsers, err = pr.getFilteredByNationalities(ctx, fetchedUsers, filter.GetNationalityOptions())

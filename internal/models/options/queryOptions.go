@@ -17,8 +17,16 @@ type QueryOptions struct {
 	NationalityOptions
 }
 
+func NewQueryOptions(options UserOptions, nationalityOptions NationalityOptions) QueryOptions {
+	return QueryOptions{options, nationalityOptions}
+}
+
 type NationalityOptions struct {
 	Nationalities []string `json:"nationality,omitempty"`
+}
+
+func NewNationalityOptions(nations []string) NationalityOptions {
+	return NationalityOptions{Nationalities: nations}
 }
 
 func (no *NationalityOptions) FilterByNationality(users []users.ExtendedUser) []users.ExtendedUser {
@@ -33,15 +41,19 @@ type UserOptions struct {
 	Offset int    `json:"offset"`
 }
 
-func (uo *QueryOptions) Build() string {
+func NewUserOptions(sex, name string, age, limit, offset int) UserOptions {
+	return UserOptions{sex, age, name, limit, offset}
+}
+
+func (uo *UserOptions) Build() string {
 	return uo.configureQueryString()
 }
 
-func (uo *QueryOptions) GetNationalityOptions() NationalityOptions {
-	return uo.NationalityOptions
+func (qo *QueryOptions) GetNationalityOptions() NationalityOptions {
+	return qo.NationalityOptions
 }
 
-func (uo *QueryOptions) validate() map[string]string {
+func (uo *UserOptions) validate() map[string]string {
 	availableOptions := make(map[string]string)
 
 	switch {
@@ -56,7 +68,7 @@ func (uo *QueryOptions) validate() map[string]string {
 	return availableOptions
 }
 
-func (uo *QueryOptions) configureQueryString() string {
+func (uo *UserOptions) configureQueryString() string {
 
 	type pair struct {
 		key   string
@@ -75,9 +87,9 @@ func (uo *QueryOptions) configureQueryString() string {
 	case 0:
 		return fmt.Sprintf("SELECT * FROM people_info LIMIT %d OFFSET %d", uo.Limit, uo.Offset)
 	case 1:
-		return fmt.Sprintf("SELECT * FROM people_info WHERE %s = %v LIMIT %d OFFSET %d", pairs[0].key, pairs[0].value, uo.Limit, uo.Offset)
+		return fmt.Sprintf("SELECT * FROM people_info WHERE %s = '%v' LIMIT %d OFFSET %d", pairs[0].key, pairs[0].value, uo.Limit, uo.Offset)
 	case 2:
-		return fmt.Sprintf("SELECT * FROM people_info WHERE %s = %v AND %s = %v LIMIT %d OFFSET %d",
+		return fmt.Sprintf("SELECT * FROM people_info WHERE %s = '%v' AND %s = '%v' LIMIT %d OFFSET %d",
 			pairs[0].key,
 			pairs[0].value,
 			pairs[1].key,
@@ -85,7 +97,7 @@ func (uo *QueryOptions) configureQueryString() string {
 			uo.Limit,
 			uo.Offset)
 	case 3:
-		return fmt.Sprintf("SELECT * FROM people_info WHERE %s = %v AND %s = %v AND %s = %s LIMIT %d OFFSET %d",
+		return fmt.Sprintf("SELECT * FROM people_info WHERE %s = '%v' AND %s = %v AND %s = '%s' LIMIT %d OFFSET %d",
 			pairs[0].key,
 			pairs[0].value,
 			pairs[1].key,
