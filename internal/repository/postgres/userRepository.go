@@ -52,7 +52,7 @@ func NewPeopleRepository() *PeopleRepository {
 		vars[dbPort],
 		vars[db])
 
-	pool, err := migrations.ConnectAndRunMigrations(context.Background(), connectionURL, migrations.UP)
+	pool, err := migrations.ConnectAndRunMigrations(context.Background(), connectionURL, "", migrations.UP)
 	log.Println(pool)
 	if err != nil {
 		logger.GetLogger().Error("Couldn't have either connected to the DB or run migrations",
@@ -140,6 +140,9 @@ func (pr *PeopleRepository) Delete(ctx context.Context, id uuid.UUID) (uuid.UUID
 }
 
 func (pr *PeopleRepository) Update(ctx context.Context, user users.ExtendedUser) (uuid.UUID, error) {
+	if ctx.Value("id") == nil {
+		return uuid.UUID{}, fmt.Errorf("ID is null")
+	}
 	if _, err := pr.Delete(ctx, ctx.Value("id").(uuid.UUID)); err != nil {
 		switch err {
 		case NoRecordsFound:

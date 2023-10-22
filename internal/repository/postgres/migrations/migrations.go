@@ -21,14 +21,19 @@ const (
 	fileDir = "file:///migrations"
 )
 
-func ConnectAndRunMigrations(ctx context.Context, dbURL string, migrationType MigrationType) (*pgxpool.Pool, error) {
+func ConnectAndRunMigrations(ctx context.Context, dbURL string, migrationsDir string, migrationType MigrationType) (*pgxpool.Pool, error) {
 	pool, err := connect(ctx, dbURL)
 	if err != nil {
 		log.Println(err.Error())
 		return nil, err
 	}
+	var dir string
+	dir = fileDir
+	if migrationsDir != "" {
+		dir = migrationsDir
+	}
 
-	if err := runMigrations(dbURL, fileDir, migrationType); err != nil {
+	if err := runMigrations(dbURL, dir, migrationType); err != nil {
 		return nil, err
 	}
 	return pool, nil

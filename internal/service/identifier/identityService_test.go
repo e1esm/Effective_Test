@@ -49,6 +49,9 @@ func TestIdentityService_Identify(t *testing.T) {
 				t.Errorf("Invalid result. Want: %v, got: %v",
 					test.user, retrievedUser)
 			}
+			if retrievedUser == nil && test.isOk {
+				t.Errorf("Invalid result. Want: %v, got: %v", test.user, retrievedUser)
+			}
 		})
 	}
 }
